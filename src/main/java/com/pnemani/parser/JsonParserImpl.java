@@ -1,0 +1,254 @@
+package com.pnemani.parser;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
+
+import com.pnemani.exceptions.JsonParserException;
+
+public final class JsonParserImpl {
+
+    public static void main(String[] args) throws JsonParserException{
+        Map<String, List<String>> mapper = new HashMap<>();
+        List<String> someList = List.of("pardhu", "keerthi", "babu");
+        mapper.put("family", someList);
+
+        String json = """
+        [
+            {
+            "name": "Alice",
+            "age": 30,
+            "scores": [10, 12.5, -3],
+            "active": true,
+            "meta": { "id": null, "tags": ["a","b\\nline"] }
+            }
+        ]
+            """;
+
+        Object result = JsonParserImpl.parse(json);
+        System.out.println(result.getClass()); // Map
+        System.out.println(((List<Map<String, Object>>)result).get(0).getClass());
+        System.out.println(((Map<String, Object>)((List<Map<String, Object>>)result).get(0)).get("name"));
+    }
+
+    private final String in;
+    private int pos = 0;
+
+    private JsonParserImpl(String in) {
+        this.in = in;
+    }
+
+    public static Object parse(String json) throws JsonParserException{
+        JsonParserImpl p = new JsonParserImpl(json);
+        Object value = p.parseValue();
+        p.skipWhitespace();
+        if (!p.isEOF()) {
+            throw p.error("Unexpected trailing characters");
+        }
+        return value;
+    }
+
+
+    private Object parseValue() throws JsonParserException{
+        skipWhitespace();
+        if (isEOF()) throw error("Unexpected end of input while parsing value");
+        char c = peek();
+        switch (c) {
+            case '{': return parseObject();
+            case '[': return parseArray();
+            case '"': return parseString();
+            case 't': return parseLiteral("true", Boolean.TRUE);
+            case 'T': return parseLiteral("true", Boolean.TRUE);
+            case 'f': return parseLiteral("false", Boolean.FALSE);
+            case 'F': return parseLiteral("false", Boolean.FALSE);
+            case 'n': return parseLiteral("null", null);
+            case 'N': return parseLiteral("null", null);
+            default:
+                if (c == '-' || isDigit(c)) {
+                    return parseNumber();
+                }
+                throw error("Unexpected character while parsing value: " + c);
+        }
+    }
+
+    private Map<String,Object> parseObject() throws JsonParserException{
+        expect('{');
+        skipWhitespace();
+        Map<String,Object> map = new LinkedHashMap<>();
+        if (peek() == '}') {
+            expect('}');
+            return map;
+        }
+        while (true) {
+            skipWhitespace();
+            if (peek() != '"') throw error("Expected string for object key");
+            String key = parseString();
+            skipWhitespace();
+            expect(':');
+            Object val = parseValue();
+            map.put(key, val);
+            skipWhitespace();
+            char c = peek();
+            if (c == ',') {
+                expect(',');
+                continue;
+            } else if (c == '}') {
+                expect('}');
+                break;
+            } else {
+                throw error("Expected ',' or '}' in object, got: " + c);
+            }
+        }
+        return map;
+    }
+
+    private List<Object> parseArray() throws JsonParserException{
+        expect('[');
+        skipWhitespace();
+        List<Object> list = new ArrayList<>();
+        if (peek() == ']') {
+            expect(']');
+            return list;
+        }
+        while (true) {
+            Object v = parseValue();
+            list.add(v);
+            skipWhitespace();
+            char c = peek();
+            if (c == ',') {
+                expect(',');
+                continue;
+            } else if (c == ']') {
+                expect(']');
+                break;
+            } else {
+                throw error("Expected ',' or ']' in array, got: " + c);
+            }
+        }
+        return list;
+    }
+
+    private String parseString() throws JsonParserException{
+        expect('"');
+        StringBuilder sb = new StringBuilder();
+        while (true) {
+            if (isEOF()) throw error("Unterminated string");
+            char c = next();
+            if (c == '"') break;
+            if (c == '\\') {
+                if (isEOF()) throw error("Unterminated escape sequence in string");
+                char esc = next();
+                switch (esc) {
+                    case '"': sb.append('"'); break;
+                    case '\\': sb.append('\\'); break;
+                    case '/': sb.append('/'); break;
+                    case 'b': sb.append('\b'); break;
+                    case 'f': sb.append('\f'); break;
+                    case 'n': sb.append('\n'); break;
+                    case 'r': sb.append('\r'); break;
+                    case 't': sb.append('\t'); break;
+                    case 'u': sb.append(parseUnicodeEscape()); break;
+                    default:
+                        throw error("Invalid escape sequence: \\" + esc);
+                }
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    private char parseUnicodeEscape() throws JsonParserException{
+        int val = 0;
+        for (int i = 0; i < 4; i++) {
+            if (isEOF()) throw error("Incomplete \\u escape");
+            char h = next();
+            int digit = hexDigit(h);
+            if (digit < 0) throw error("Invalid hex digit in \\u escape: " + h);
+            val = (val << 4) + digit;
+        }
+        return (char) val;
+    }
+
+    private int hexDigit(char c) {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+        if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
+        return -1;
+    }
+
+    private Object parseNumber() throws JsonParserException{
+        int start = pos;
+        char c = peek();
+        if (c == '-') pos++;
+        boolean atLeastOneDigit = false;
+        while (!isEOF() && isDigit(peek())) { pos++; atLeastOneDigit = true; }
+        if (!atLeastOneDigit) throw error("Invalid number, expected digits");
+
+        // fraction
+        if (!isEOF() && peek() == '.') {
+            pos++;
+            if (isEOF() || !isDigit(peek())) throw error("Invalid number, expected digits after '.'");
+            while (!isEOF() && isDigit(peek())) pos++;
+        }
+
+        // exponent
+        if (!isEOF() && (peek() == 'e' || peek() == 'E')) {
+            pos++;
+            if (!isEOF() && (peek() == '+' || peek() == '-')) pos++;
+            if (isEOF() || !isDigit(peek())) throw error("Invalid number, expected digits after exponent");
+            while (!isEOF() && isDigit(peek())) pos++;
+        }
+
+        String numStr = in.substring(start, pos);
+        try {
+            return new BigDecimal(numStr);
+        } catch (NumberFormatException ex) {
+            throw error("Invalid number format: " + numStr);
+        }
+    }
+
+    private Object parseLiteral(String literal, Object value) throws JsonParserException{
+        for (int i = 0; i < literal.length(); i++) {
+            if (isEOF() || next() != literal.charAt(i)) throw error("Unexpected literal");
+        }
+        return value;
+    }
+
+    private void skipWhitespace() {
+        while (!isEOF()) {
+            char c = peek();
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') pos++;
+            else break;
+        }
+    }
+
+    private boolean isEOF() {
+        return pos >= in.length();
+    }
+
+    private char peek() {
+        return in.charAt(pos);
+    }
+
+    private char next() {
+        return in.charAt(pos++);
+    }
+
+    private void expect(char c) throws JsonParserException{
+        if (isEOF() || next() != c) throw error("Expected '" + c + "'");
+    }
+
+    private boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
+    private JsonParserException error(String msg) {
+        int line = 1, col = 1;
+        for (int i = 0; i < Math.min(pos, in.length()); i++) {
+            if (in.charAt(i) == '\n') { line++; col = 1; }
+            else col++;
+        }
+        return new JsonParserException(msg + " at position " + pos + " (line " + line + ", col " + col + ")", pos);
+    }
+}
