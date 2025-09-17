@@ -1,23 +1,27 @@
 package com.pnemani.parser;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 
 import com.pnemani.exceptions.JsonParserException;
 import com.pnemani.model.JsonElement;
-import com.pnemani.model.JsonObject;
 
-public final class JsonParserImpl {
+public class JsonParserImpl {
 
-    private final String in;
+    private String in;
     private int pos = 0;
 
-    public JsonParserImpl(String in) {
-        this.in = in;
+    protected JsonParserImpl(String json){
+        this.in = json;
     }
 
-    public JsonElement parse() throws JsonParserException{
+    protected JsonParserImpl() {
+        this.in = "";
+    }
+
+    protected JsonElement parseString(String json) throws JsonParserException{
+        this.in = json;
+        this.pos = 0;
         JsonElement value = this.parseValue();
         this.skipWhitespace();
         if (!this.isEOF()) {
