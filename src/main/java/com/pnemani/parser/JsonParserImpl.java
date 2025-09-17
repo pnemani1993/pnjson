@@ -5,51 +5,28 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import com.pnemani.exceptions.JsonParserException;
+import com.pnemani.model.JsonElement;
+import com.pnemani.model.JsonObject;
 
 public final class JsonParserImpl {
-
-    public static void main(String[] args) throws JsonParserException{
-        Map<String, List<String>> mapper = new HashMap<>();
-        List<String> someList = List.of("pardhu", "keerthi", "babu");
-        mapper.put("family", someList);
-
-        String json = """
-        [
-            {
-            "name": "Alice",
-            "age": 30,
-            "scores": [10, 12.5, -3],
-            "active": true,
-            "meta": { "id": null, "tags": ["a","b\\nline"] }
-            }
-        ]
-            """;
-
-        Object result = JsonParserImpl.parse(json);
-        System.out.println(result.getClass()); // Map
-        System.out.println(((List<Map<String, Object>>)result).get(0).getClass());
-        System.out.println(((Map<String, Object>)((List<Map<String, Object>>)result).get(0)).get("name"));
-    }
 
     private final String in;
     private int pos = 0;
 
-    private JsonParserImpl(String in) {
+    public JsonParserImpl(String in) {
         this.in = in;
     }
 
-    public static Object parse(String json) throws JsonParserException{
-        JsonParserImpl p = new JsonParserImpl(json);
-        Object value = p.parseValue();
-        p.skipWhitespace();
-        if (!p.isEOF()) {
-            throw p.error("Unexpected trailing characters");
+    public JsonElement parse() throws JsonParserException{
+        JsonElement value = this.parseValue();
+        this.skipWhitespace();
+        if (!this.isEOF()) {
+            throw this.error("Unexpected trailing characters");
         }
         return value;
     }
 
-
-    private Object parseValue() throws JsonParserException{
+    private JsonElement parseValue() throws JsonParserException{
         skipWhitespace();
         if (isEOF()) throw error("Unexpected end of input while parsing value");
         char c = peek();
@@ -58,11 +35,11 @@ public final class JsonParserImpl {
             case '[': return parseArray();
             case '"': return parseString();
             case 't': return parseLiteral("true", Boolean.TRUE);
-            case 'T': return parseLiteral("true", Boolean.TRUE);
+            case 'T': return parseLiteral("True", Boolean.TRUE);
             case 'f': return parseLiteral("false", Boolean.FALSE);
-            case 'F': return parseLiteral("false", Boolean.FALSE);
+            case 'F': return parseLiteral("False", Boolean.FALSE);
             case 'n': return parseLiteral("null", null);
-            case 'N': return parseLiteral("null", null);
+            case 'N': return parseLiteral("Null", null);
             default:
                 if (c == '-' || isDigit(c)) {
                     return parseNumber();
@@ -71,21 +48,21 @@ public final class JsonParserImpl {
         }
     }
 
-    private Map<String,Object> parseObject() throws JsonParserException{
+    private JsonElement parseObject() throws JsonParserException{
         expect('{');
         skipWhitespace();
-        Map<String,Object> map = new LinkedHashMap<>();
+        Map<String,JsonElement> map = new LinkedHashMap<>();
         if (peek() == '}') {
             expect('}');
-            return map;
+            return new JsonElement(map);
         }
         while (true) {
             skipWhitespace();
             if (peek() != '"') throw error("Expected string for object key");
-            String key = parseString();
+            String key = parseStringKey();
             skipWhitespace();
             expect(':');
-            Object val = parseValue();
+            JsonElement val = parseValue();
             map.put(key, val);
             skipWhitespace();
             char c = peek();
@@ -99,19 +76,19 @@ public final class JsonParserImpl {
                 throw error("Expected ',' or '}' in object, got: " + c);
             }
         }
-        return map;
+        return new JsonElement(map);
     }
 
-    private List<Object> parseArray() throws JsonParserException{
+    private JsonElement parseArray() throws JsonParserException{
         expect('[');
         skipWhitespace();
-        List<Object> list = new ArrayList<>();
+        List<JsonElement> list = new ArrayList<>();
         if (peek() == ']') {
             expect(']');
-            return list;
+            return new JsonElement(list);
         }
         while (true) {
-            Object v = parseValue();
+            JsonElement v = parseValue();
             list.add(v);
             skipWhitespace();
             char c = peek();
@@ -125,10 +102,40 @@ public final class JsonParserImpl {
                 throw error("Expected ',' or ']' in array, got: " + c);
             }
         }
-        return list;
+        return new JsonElement(list);
     }
 
-    private String parseString() throws JsonParserException{
+    private JsonElement parseString() throws JsonParserException{
+        expect('"');
+        StringBuilder sb = new StringBuilder();
+        while (true) {
+            if (isEOF()) throw error("Unterminated string");
+            char c = next();
+            if (c == '"') break;
+            if (c == '\\') {
+                if (isEOF()) throw error("Unterminated escape sequence in string");
+                char esc = next();
+                switch (esc) {
+                    case '"': sb.append('"'); break;
+                    case '\\': sb.append('\\'); break;
+                    case '/': sb.append('/'); break;
+                    case 'b': sb.append('\b'); break;
+                    case 'f': sb.append('\f'); break;
+                    case 'n': sb.append('\n'); break;
+                    case 'r': sb.append('\r'); break;
+                    case 't': sb.append('\t'); break;
+                    case 'u': sb.append(parseUnicodeEscape()); break;
+                    default:
+                        throw error("Invalid escape sequence: \\" + esc);
+                }
+            } else {
+                sb.append(c);
+            }
+        }
+        return new JsonElement(sb.toString());
+    }
+
+    private String parseStringKey() throws JsonParserException{
         expect('"');
         StringBuilder sb = new StringBuilder();
         while (true) {
@@ -177,7 +184,7 @@ public final class JsonParserImpl {
         return -1;
     }
 
-    private Object parseNumber() throws JsonParserException{
+    private JsonElement parseNumber() throws JsonParserException{
         int start = pos;
         char c = peek();
         if (c == '-') pos++;
@@ -202,17 +209,17 @@ public final class JsonParserImpl {
 
         String numStr = in.substring(start, pos);
         try {
-            return new BigDecimal(numStr);
+            return new JsonElement(new BigDecimal(numStr));
         } catch (NumberFormatException ex) {
             throw error("Invalid number format: " + numStr);
         }
     }
 
-    private Object parseLiteral(String literal, Object value) throws JsonParserException{
+    private JsonElement parseLiteral(String literal, Boolean value) throws JsonParserException{
         for (int i = 0; i < literal.length(); i++) {
             if (isEOF() || next() != literal.charAt(i)) throw error("Unexpected literal");
         }
-        return value;
+        return value != null? new JsonElement(value): null;
     }
 
     private void skipWhitespace() {
