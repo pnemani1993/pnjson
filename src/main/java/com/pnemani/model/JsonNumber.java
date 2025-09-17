@@ -2,10 +2,9 @@ package com.pnemani.model;
 
 public interface JsonNumber {
 
-    int getNumberAsInt();
+  int getNumberAsInt();
 
-    long getNumberAsLong();
+  long getNumberAsLong();
 
-    double getNumberAsDouble();
-
+  double getNumberAsDouble();
 }
