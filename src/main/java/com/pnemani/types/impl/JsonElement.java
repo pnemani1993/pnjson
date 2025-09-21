@@ -1,11 +1,12 @@
-package com.pnemani.model.impl;
+package com.pnemani.types.impl;
 
 import com.pnemani.exceptions.InvalidOperationException;
-import com.pnemani.model.JsonArray;
-import com.pnemani.model.JsonBoolean;
-import com.pnemani.model.JsonNumber;
-import com.pnemani.model.JsonObject;
-import com.pnemani.model.JsonString;
+import com.pnemani.types.JsonArray;
+import com.pnemani.types.JsonBoolean;
+import com.pnemani.types.JsonNumber;
+import com.pnemani.types.JsonObject;
+import com.pnemani.types.JsonString;
+
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.Iterator;

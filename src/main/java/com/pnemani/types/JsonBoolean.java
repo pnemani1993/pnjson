@@ -1,4 +1,4 @@
-package com.pnemani.model;
+package com.pnemani.types;
 
 public interface JsonBoolean {
   Boolean getBoolean();

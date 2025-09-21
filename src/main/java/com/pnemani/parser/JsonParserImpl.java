@@ -1,7 +1,8 @@
 package com.pnemani.parser;
 
 import com.pnemani.exceptions.JsonParserException;
-import com.pnemani.model.impl.JsonElement;
+import com.pnemani.types.impl.JsonElement;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

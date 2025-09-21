@@ -1,8 +1,7 @@
 package com.pnemani.parser;
 
 import com.pnemani.exceptions.JsonParserException;
-import com.pnemani.model.impl.JsonElement;
-
+import com.pnemani.types.impl.JsonElement;
 
 import java.io.File;
 import java.io.FileNotFoundException;

@@ -1,8 +1,9 @@
-package com.pnemani.model;
+package com.pnemani.types;
 
-import com.pnemani.model.impl.JsonElement;
 import java.util.Iterator;
 import java.util.List;
+
+import com.pnemani.types.impl.JsonElement;
 
 public interface JsonArray {
 
