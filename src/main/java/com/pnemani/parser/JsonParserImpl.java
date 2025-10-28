@@ -9,14 +9,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class JsonParserImpl {
+public sealed class JsonParserImpl permits JsonParser {
 
   private String in;
   private int pos = 0;
-
-  protected JsonParserImpl(String json) {
-    this.in = json;
-  }
 
   protected JsonParserImpl() {
     this.in = "";

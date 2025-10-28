@@ -81,6 +81,11 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.mapElement != null;
   }
 
+  public Map<String, JsonElement> getMap() {
+    if (isObject()) return this.mapElement;
+    else return null;
+  }
+
   public boolean isIterable() {
     return this.listElement != null;
   }
@@ -95,16 +100,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
 
   public boolean isBoolean() {
     return this.booleanElement != null;
-  }
-
-  @Override
-  public String toString() {
-    if (isObject()) return this.mapElement.toString();
-    else if (isIterable()) return this.listElement.toString();
-    else if (isText()) return this.textElement;
-    else if (isNumber()) return this.numberElement.toString();
-    else if (isBoolean()) return this.booleanElement.toString();
-    else return null;
   }
 
   @Override
@@ -140,7 +135,7 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
   }
 
   @Override
-  public int getNumberAsInt() {
+  public Integer getNumberAsInt() {
     if (!isNumber()) {
       throw new InvalidOperationException(errorString("getNumberAsInt()"));
     }
@@ -148,7 +143,7 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
   }
 
   @Override
-  public long getNumberAsLong() {
+  public Long getNumberAsLong() {
     if (!isNumber()) {
       throw new InvalidOperationException(errorString("getNumberAsLong()"));
     }
@@ -156,7 +151,7 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
   }
 
   @Override
-  public double getNumberAsDouble() {
+  public Double getNumberAsDouble() {
     if (!isNumber()) {
       throw new InvalidOperationException(errorString("getNumberAsDouble()"));
     }
@@ -180,7 +175,7 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
   }
 
   @SuppressWarnings("unchecked")
-  public boolean equals(JsonElement element) {
+  public boolean equals(JsonElement element) throws InvalidOperationException {
     if (element instanceof JsonElement) {
       if (element.getClassType() != this.getClassType()) return false;
       try {
@@ -202,7 +197,7 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
           | IllegalArgumentException
           | NoSuchFieldException
           | SecurityException ex) {
-        System.out.println(ex);
+        throw new InvalidOperationException(ex.getMessage());
       }
       return true;
     } else {
@@ -237,4 +232,42 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return String.format(
         "Method %s cannot be called on JsonElement of type: %s", methodName, this.getClassType());
   }
+
+  @Override
+  public String toString() {
+    if (isObject()) return this.convertMapToString();
+    else if (isIterable()) return this.convertListToString();
+    else if (isText()) return this.convertTextToString();
+    else if (isNumber()) return this.numberElement.toString();
+    else if (isBoolean()) return this.booleanElement.toString();
+    else return null;
+  }
+
+  private String convertMapToString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{");
+    this.mapElement.forEach((key, value) -> {
+      if (value != null) sb.append("\"" + key + "\"" + ": " + value.toString() + ",");
+      else sb.append("\"" + key + "\"" + ": null," );
+    });
+    sb.deleteCharAt(sb.length() - 1);
+    sb.append("}");
+    return sb.toString();
+  }
+
+  private String convertListToString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    this.listElement.forEach(value -> {
+      sb.append(value.toString() + ",");
+    });
+    sb.deleteCharAt(sb.length()-1);
+    sb.append("]");
+    return sb.toString();
+  }
+
+  private String convertTextToString() {
+    return "\"" + this.textElement  + "\"";
+  }
+
 }

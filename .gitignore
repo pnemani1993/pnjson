@@ -28,3 +28,7 @@ replay_pid*
 
 # Maven related
 target/*
+
+src/main/java/com/pnemani/*.java
+
+file.json
