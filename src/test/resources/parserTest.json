@@ -1,0 +1,15 @@
+{
+  "name": "value",
+  "age": 32,
+  "banks": [
+    "chase",
+    "chime",
+    "wells_fargo"
+  ],
+  "isCitizen": false,
+  "location": null,
+  "occupation": {
+    "organization": "chase",
+    "position": "developer"
+  }
+}

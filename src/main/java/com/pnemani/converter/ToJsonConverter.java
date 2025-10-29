@@ -122,7 +122,7 @@ public class ToJsonConverter {
             int length = Array.getLength(obj);
             List<String> elements = new ArrayList<>();
             for (int i = 0; i < length; i++) {
-                elements.add(toJson(Array.get(obj, i)));
+                elements.add(convertToJson(Array.get(obj, i)));
             }
             return "[" + String.join(",", elements) + "]";
         }
@@ -132,7 +132,7 @@ public class ToJsonConverter {
             Collection<?> collection = (Collection<?>) obj;
             List<String> elements = new ArrayList<>();
             for (Object element : collection) {
-                elements.add(toJson(element));
+                elements.add(convertToJson(element));
             }
             return "[" + String.join(",", elements) + "]";
         }
@@ -143,7 +143,7 @@ public class ToJsonConverter {
             List<String> entries = new ArrayList<>();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
                 String key = String.valueOf(entry.getKey());
-                entries.add("\"" + escapeString(key) + "\":" + toJson(entry.getValue()));
+                entries.add("\"" + escapeString(key) + "\":" + convertToJson(entry.getValue()));
             }
             return "{" + String.join(",", entries) + "}";
         }
@@ -167,7 +167,7 @@ public class ToJsonConverter {
                     fieldName = field.getName();
                 }
                 Object value = field.get(obj);
-                fields.add("\"" + escapeString(fieldName) + "\":" + toJson(value));
+                fields.add("\"" + escapeString(fieldName) + "\":" + convertToJson(value));
             } catch (IllegalAccessException e) {
                 // skip field
             }
