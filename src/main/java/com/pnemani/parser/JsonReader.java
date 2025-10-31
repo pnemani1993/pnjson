@@ -1,23 +1,26 @@
-package com.pnemani.reader;
+package com.pnemani.parser;
 
 import java.lang.reflect.*;
 import java.util.*;
 
 import com.pnemani.annotations.Json;
-import com.pnemani.parser.JsonParser;
-import com.pnemani.types.impl.JsonElement;
+import com.pnemani.exceptions.JsonConversionException;
+import com.pnemani.exceptions.JsonParserException;
+import com.pnemani.types.JsonElement;
 
-public class JsonReader {
+public sealed abstract class JsonReader extends JsonParserImpl permits ParserImpl {
 
-    private final JsonParser parser = new JsonParser();
+    protected JsonReader() {
+        super();
+    }
 
-    public <T> T readValue(String json, Class<T> classType) throws Exception {
-        JsonElement element = parser.parse(json);
+    protected <T> T readValue(String json, Class<T> classType) throws JsonParserException, JsonConversionException {
+        JsonElement element = super.parseString(json);
         return convertElement(element, classType);
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T convertElement(JsonElement element, Class<T> classType) throws Exception {
+    private <T> T convertElement(JsonElement element, Class<T> classType) throws JsonConversionException {
         if (element == null) return null;
 
         // Handle primitives & simple wrappers
@@ -50,11 +53,11 @@ public class JsonReader {
             return convertObjectElement(element, classType);
         }
 
-        throw new IllegalArgumentException("Unsupported type: " + classType);
+        throw new JsonConversionException("Unsupported class type: " + classType);
     }
 
     @SuppressWarnings("unchecked")
-    private <T> List<T> convertListElement(JsonElement element, Class<T> classType) throws Exception {
+    private <T> List<T> convertListElement(JsonElement element, Class<T> classType) throws JsonConversionException {
         List<JsonElement> list = element.getList();
         List<Object> result = new ArrayList<>();
         for (JsonElement e : list) {
@@ -63,7 +66,7 @@ public class JsonReader {
         return (List<T>) result;
     }
 
-    private <T> T convertObjectElement(JsonElement element, Class<T> classType) throws Exception {
+    private <T> T convertObjectElement(JsonElement element, Class<T> classType) throws JsonConversionException {
         Map<String, JsonElement> map = element.getMap();
 
         // Handle Java Records
@@ -74,7 +77,13 @@ public class JsonReader {
 
             for (int i = 0; i < components.length; i++) {
                 RecordComponent component = components[i];
-                Field field = classType.getDeclaredField(component.getName());
+                Field field;
+                try{
+                    field = classType.getDeclaredField(component.getName());
+                } catch (NoSuchFieldException | SecurityException ex){
+                    System.out.println(ex.getMessage());
+                    throw new JsonConversionException("The field does not exist or is not accessible: " + component.getName());
+                }
                 field.setAccessible(true);
                 String fieldName;
                 var jsonAnnotation = field.getAnnotation(Json.class);
@@ -99,23 +108,35 @@ public class JsonReader {
             }
 
             // Create new record instance with canonical constructor
-            Constructor<T> canonical = classType.getDeclaredConstructor(
-                Arrays.stream(components)
-                    .map(RecordComponent::getType)
-                    .toArray(Class[]::new)
-            );
+            Constructor<T> canonical;
+            
+            try {
+                canonical = classType.getDeclaredConstructor(
+                    Arrays.stream(components)
+                        .map(RecordComponent::getType)
+                        .toArray(Class[]::new)
+                );
+            } catch (NoSuchMethodException | SecurityException ex) {
+                System.out.println(ex.getMessage());
+                throw new JsonConversionException("The constructor cannot be accessed: " + classType);
+            }
             canonical.setAccessible(true);
             try{
             T newInstance = canonical.newInstance(args);
             return newInstance;
-            } catch (Exception ex) {
-                ex.printStackTrace();
+            } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | InvocationTargetException ex) {
                 System.out.println(ex.getMessage());
-                return null;
+                throw new JsonConversionException("The object cannot be instantiated: " + canonical.getName());
             }
         }
 
-        T instance = classType.getDeclaredConstructor().newInstance();
+        T instance;
+        try {
+            instance = classType.getDeclaredConstructor().newInstance();
+        } catch(IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException ex){
+            System.out.println(ex.getMessage());
+            throw new JsonConversionException("The object cannot be instantiated: " + classType);
+        }
 
         for (Field field : classType.getDeclaredFields()) {
             field.setAccessible(true);
@@ -137,7 +158,12 @@ public class JsonReader {
                     converted = convertListElement(fieldValue, listType);
                 } 
                 else converted = convertElement(fieldValue, typeOfClass);                     
-                field.set(instance, converted);
+                try { 
+                    field.set(instance, converted); 
+                } catch(IllegalAccessException | IllegalArgumentException ex) {
+                    System.out.println(ex.getMessage());
+                    throw new JsonConversionException("The field value cannot be set: " + field.getName());
+                }
             }
         }
         return instance;

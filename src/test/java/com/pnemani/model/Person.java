@@ -1,4 +1,4 @@
-package com.pnemani.converter;
+package com.pnemani.model;
 
 import java.util.List;
 

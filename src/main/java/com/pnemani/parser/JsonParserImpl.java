@@ -1,7 +1,7 @@
 package com.pnemani.parser;
 
 import com.pnemani.exceptions.JsonParserException;
-import com.pnemani.types.impl.JsonElement;
+import com.pnemani.types.JsonElement;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public sealed class JsonParserImpl permits JsonParser {
+public sealed abstract class JsonParserImpl implements JsonParser permits JsonReader {
 
   private String in;
   private int pos = 0;

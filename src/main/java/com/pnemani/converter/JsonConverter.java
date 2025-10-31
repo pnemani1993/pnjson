@@ -10,9 +10,9 @@ import java.util.Map;
 
 import com.pnemani.annotations.Json;
 
-public class ToJsonConverter {
+public class JsonConverter {
 
-    public static String toJson(Object obj) {
+    public String toJson(Object obj) {
         if (obj == null) {
             return "null";
         } else if (obj instanceof Class){
@@ -90,7 +90,7 @@ public class ToJsonConverter {
     }
 
     // Escape special characters for JSON strings
-    private static String escape(String s) {
+    private String escape(String s) {
         return s.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
@@ -98,7 +98,7 @@ public class ToJsonConverter {
                 .replace("\t", "\\t");
     }
 
-    public String convertToJson(Object obj) {
+    public static String convertToJson(Object obj) {
         if (obj == null) {
             return "null";
         } else if (obj instanceof Class){
@@ -175,7 +175,7 @@ public class ToJsonConverter {
         return "{" + String.join(",", fields) + "}";
     }
 
-    private String escapeString(String s) {
+    private static String escapeString(String s) {
         return s.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")

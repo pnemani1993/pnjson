@@ -1,4 +1,4 @@
-package com.pnemani.types.impl;
+package com.pnemani.types;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.pnemani.exceptions.InvalidOperationException;
+import com.pnemani.types.JsonElement;
 
 public class JsonElementTest {
     static final JsonElement stringElement = new JsonElement("PLACEHOLDER");

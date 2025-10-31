@@ -1,11 +1,6 @@
-package com.pnemani.types.impl;
+package com.pnemani.types;
 
 import com.pnemani.exceptions.InvalidOperationException;
-import com.pnemani.types.JsonArray;
-import com.pnemani.types.JsonBoolean;
-import com.pnemani.types.JsonNumber;
-import com.pnemani.types.JsonObject;
-import com.pnemani.types.JsonString;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -14,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObject, JsonString {
+public class JsonElement {
   private final Map<String, JsonElement> mapElement;
   private final String textElement;
   private final List<JsonElement> listElement;
@@ -102,7 +97,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.booleanElement != null;
   }
 
-  @Override
   public Boolean getBoolean() {
     if (!isBoolean()) {
       throw new InvalidOperationException(errorString("getBoolean()"));
@@ -110,7 +104,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.booleanElement;
   }
 
-  @Override
   public Iterator<JsonElement> getIterator() {
     if (!isIterable()) {
       throw new InvalidOperationException(errorString("getIterator()"));
@@ -118,7 +111,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.listElement.iterator();
   }
 
-  @Override
   public JsonElement get(int index) {
     if (!isIterable()) {
       throw new InvalidOperationException(errorString("get(int index)"));
@@ -126,7 +118,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.listElement.get(index);
   }
 
-  @Override
   public List<JsonElement> getList() {
     if (!isIterable()) {
       throw new InvalidOperationException(errorString("getList()"));
@@ -134,7 +125,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.listElement;
   }
 
-  @Override
   public Integer getNumberAsInt() {
     if (!isNumber()) {
       throw new InvalidOperationException(errorString("getNumberAsInt()"));
@@ -142,7 +132,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.numberElement.intValue();
   }
 
-  @Override
   public Long getNumberAsLong() {
     if (!isNumber()) {
       throw new InvalidOperationException(errorString("getNumberAsLong()"));
@@ -150,7 +139,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.numberElement.longValue();
   }
 
-  @Override
   public Double getNumberAsDouble() {
     if (!isNumber()) {
       throw new InvalidOperationException(errorString("getNumberAsDouble()"));
@@ -158,7 +146,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.numberElement.doubleValue();
   }
 
-  @Override
   public JsonElement get(String key) {
     if (!isObject()) {
       throw new InvalidOperationException(errorString("get(String key)"));
@@ -166,7 +153,6 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.mapElement.get(key);
   }
 
-  @Override
   public String getText() {
     if (!isText()) {
       throw new InvalidOperationException(errorString("getText()"));
@@ -174,9 +160,10 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
     return this.textElement;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
-  public boolean equals(JsonElement element) throws InvalidOperationException {
-    if (element instanceof JsonElement) {
+  public boolean equals(Object obj){
+    if (obj instanceof JsonElement element) {
       if (element.getClassType() != this.getClassType()) return false;
       try {
         Field comparisonField = element.getClass().getDeclaredField(this.declaredField);
@@ -269,5 +256,4 @@ public class JsonElement implements JsonArray, JsonBoolean, JsonNumber, JsonObje
   private String convertTextToString() {
     return "\"" + this.textElement  + "\"";
   }
-
 }

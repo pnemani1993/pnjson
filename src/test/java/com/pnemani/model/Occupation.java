@@ -1,4 +1,4 @@
-package com.pnemani.converter;
+package com.pnemani.model;
 
 public class Occupation {
     private String organization;

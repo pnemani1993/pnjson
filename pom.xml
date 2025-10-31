@@ -7,9 +7,24 @@
     <artifactId>pnjson</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-
     <description> A simplified json parser for Java using only the standard library </description>
     
+    <developers>
+        <developer>
+            <name>Pardha Saradhi Sastry Nemani</name>
+            <email>sastry.nemani1993@gmail.com</email>
+        </developer>
+    </developers>
+    
+    <url>https://github.com/pnemani1993/pnjson</url>
+    
+    <scm>
+        <connection>scm:git:https://github.com/pnemani1993/pnjson.git</connection>
+        <developerConnection>scm:git:git@github.com/pnemani1993/pnjson.git</developerConnection>
+        <url>https://github.com/pnemani1993/pnjson</url>    
+        <tag>HEAD</tag>
+    </scm>
+
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
     </properties>
@@ -28,12 +43,11 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-jar-plugin</artifactId>
-            <version>3.2.0</version>
+            <version>3.4.2</version>
             <configuration>
                 <archive>
                     <manifest>
                         <addClasspath>true</addClasspath>
-                        <mainClass>com.pnemani.Main</mainClass>
                     </manifest>
                 </archive>
             </configuration>

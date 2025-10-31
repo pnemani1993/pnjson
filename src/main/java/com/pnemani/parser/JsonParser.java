@@ -1,31 +1,19 @@
 package com.pnemani.parser;
 
-import com.pnemani.exceptions.JsonParserException;
-import com.pnemani.types.impl.JsonElement;
-
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Scanner;
 
-public final class JsonParser extends JsonParserImpl {
+import com.pnemani.exceptions.JsonConversionException;
+import com.pnemani.exceptions.JsonParserException;
+import com.pnemani.types.JsonElement;
 
-  public JsonParser() {
-    super();
-  }
+public interface JsonParser {
+    
+    JsonElement parse(String json) throws JsonParserException;
 
-  public JsonElement parse(String json) throws JsonParserException {
-    return super.parseString(json);
-  }
+    JsonElement parse(File file) throws JsonParserException, FileNotFoundException;
 
-  public JsonElement parse(File file) throws JsonParserException, FileNotFoundException {
-    try (Scanner scan = new Scanner(file)) {
-      StringBuilder sb = new StringBuilder();
-      while (scan.hasNextLine()) {
-        sb.append(scan.nextLine());
-      }
-      return super.parseString(sb.toString());
-    } catch (FileNotFoundException ex) {
-      throw new FileNotFoundException(ex.getMessage());
-    }
-  }
+    <T> T parse(String json, Class<T> classType) throws JsonParserException, JsonConversionException;
+
+    <T> T parse(File file, Class<T> classType) throws JsonParserException, JsonConversionException, FileNotFoundException;
 }

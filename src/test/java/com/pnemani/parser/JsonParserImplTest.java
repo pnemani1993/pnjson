@@ -8,11 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import com.pnemani.exceptions.JsonParserException;
-import com.pnemani.types.impl.JsonElement;
+import com.pnemani.types.JsonElement;
 
 public class JsonParserImplTest {
 
@@ -36,17 +38,54 @@ public class JsonParserImplTest {
             "age" : 32,
         }
             """;
-    JsonParserImpl parser;
 
-    // @BeforeAll
-    // void setup() {
-    //     parser = new JsonParserImpl(JSON);
-    // }
+    private static final String CHAR_JSON = """
+            {
+                "message": "Hello\\nWorld\\tTabbed",
+                "quote": "He said: \\\"JSON is fun!\\\"",
+                "unicode": "Snowman: \\u2603"
+            }
+            """;
+
+    private static final String MISSING_FIELDS_JSON = """
+            [
+                { "id": 1, "name": "A" },
+                { "id": 2 },
+                { "name": "C", "active": true }
+            ]
+            """;
+
+    private static final String NESTED_JSON = """
+            {
+                "a": {
+                    "b": {
+                        "c": {
+                            "d": {
+                                "e": 42
+                            }
+                        }
+                    }
+                }
+            }
+            """;
+
+    private static final String MIXED_JSON = """
+            [
+                1,
+                [2, 3],
+                { "x": 4 },
+                "five",
+                null
+            ]
+
+            """;
+
+    JsonParserImpl parser;
 
     @Test 
     void constructorTest() {
         // Test if the string is empty
-        parser = new JsonParserImpl(); 
+        parser = new ParserImpl(); 
         try {
             // accessing the private 'in' field
             Field inField = JsonParserImpl.class.getDeclaredField("in");
@@ -69,7 +108,7 @@ public class JsonParserImplTest {
     @Test 
     void validParseStringTest() {
         // Test if the string is empty
-        parser = new JsonParserImpl(); 
+        parser = new ParserImpl(); 
         try { 
             assertDoesNotThrow(() -> parser.parseString(JSON));
             JsonElement readValue = parser.parseString(JSON);
@@ -92,7 +131,68 @@ public class JsonParserImplTest {
 
     @Test
     void invalidParseStringTest() {
-        parser = new JsonParserImpl();
+        parser = new ParserImpl();
             assertThrows(JsonParserException.class, () -> {parser.parseString(INVALID_JSON);});
+    }
+
+    @Test
+    void characterJsonTest() {
+        parser = new ParserImpl();
+        JsonElement element;
+        try{ 
+            element = parser.parseString(CHAR_JSON);
+        } catch (JsonParserException ex){
+            throw new AssertionFailedError();
+        }
+        assertEquals("Hello\nWorld\tTabbed", element.get("message").getText());
+        assertEquals("He said: \"JSON is fun!\"", element.get("quote").getText());
+        assertEquals("Snowman: \u2603", element.get("unicode").getText());
+    }
+
+    @Test
+    void missingFieldsJsonTest() {
+        parser = new ParserImpl();
+        JsonElement element;
+        try{ 
+            element = parser.parseString(MISSING_FIELDS_JSON);
+        } catch (JsonParserException ex){
+            throw new AssertionFailedError();
+        }
+        assertEquals(1, element.get(0).get("id").getNumberAsInt());
+        assertEquals("A", element.get(0).get("name").getText());
+
+        assertEquals(2, element.get(1).get("id").getNumberAsInt());
+
+        assertEquals("C", element.get(2).get("name").getText());
+        assertTrue(element.get(2).get("active").getBoolean());
+    }
+
+    @Test
+    void nestedJsonTest() {
+        parser = new ParserImpl();
+        JsonElement element;
+        try{ 
+            element = parser.parseString(NESTED_JSON);
+        } catch (JsonParserException ex){
+            throw new AssertionFailedError();
+        }
+        assertEquals(42, element.get("a").get("b").get("c").get("d").get("e").getNumberAsInt());
+    }
+
+    @Test
+    void mixedJsonTest() {
+        parser = new ParserImpl();
+        JsonElement element;
+        try{ 
+            element = parser.parseString(MIXED_JSON);
+        } catch (JsonParserException ex){
+            throw new AssertionFailedError();
+        }
+        assertEquals(1, element.get(0).getNumberAsInt());
+        assertEquals(2, element.get(1).get(0).getNumberAsInt());
+        assertEquals(3, element.get(1).get(1).getNumberAsInt());
+        assertEquals(4, element.get(2).get("x").getNumberAsInt());
+        assertEquals("five", element.get(3).getText());
+        assertNull(element.get(4));        
     }
 }

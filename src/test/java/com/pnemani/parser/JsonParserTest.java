@@ -13,7 +13,7 @@ import java.io.FileNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import com.pnemani.exceptions.JsonParserException;
-import com.pnemani.types.impl.JsonElement;
+import com.pnemani.types.JsonElement;
 
 public class JsonParserTest {
     private final File VALID_FILE = new File("src/test/resources/parserTest.json");
@@ -43,12 +43,12 @@ public class JsonParserTest {
         }
             """;
     
-    private JsonParser parser;
+    private ParserImpl parser;
 
     @Test 
     void validParseTest() {
         // Test if the string is empty
-        parser = new JsonParser(); 
+        parser = new ParserImpl(); 
         try { 
             assertDoesNotThrow(() -> parser.parse(VALID_JSON));
             JsonElement readValue = parser.parse(VALID_JSON);
@@ -71,13 +71,13 @@ public class JsonParserTest {
 
     @Test
     void invalidParseTest() {
-        parser = new JsonParser();
+        parser = new ParserImpl();
             assertThrows(JsonParserException.class, () -> {parser.parse(INVALID_JSON);});
     }
 
     @Test
     void validParseFileTest() {
-        parser = new JsonParser();
+        parser = new ParserImpl();
 
         try {
             assertDoesNotThrow(() -> parser.parse(VALID_FILE));
